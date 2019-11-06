@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<head>
+    <!-- This file is helpful for analyzing the performance by looking at how long each function call took -->
+    <title>Time visualizer</title>
+</head>
+<body>
+    Paste collected data here:
+    <br/>
+    <textarea id="ta" style="width: 90%;height: 5em;">
+        [2019-08-12 12:17:11,509] [DEBUG] AIExecutor - exiting function _parallel_detection - execution time: 2.5962 seconds (7.896138067:10.49238141)
+        [2019-08-12 12:17:11,510] [DEBUG] AIExecutor - exiting function detect - execution time: 2.6033 seconds (7.889467769:10.492752736)
+        [2019-08-12 12:17:11,511] [DEBUG] AIDetection - exiting function inspect - execution time: 2.6087 seconds (7.885833323:10.494510026)
+        [2019-08-12 12:17:11,522] [DEBUG] AIDetection - exiting function _apply_selector - execution time: 0.0007 seconds (10.503786568:10.504525187)
+        [2019-08-12 12:17:11,522] [DEBUG] AIDetection - exiting function detect - execution time: 2.6213 seconds (7.88354562:10.504870486)
+        [2019-08-12 12:17:13,143] [DEBUG] AIExecutor - exiting function _parallel_detection - execution time: 4.2205 seconds (7.905625014:12.126129738)
+        [2019-08-12 12:17:13,144] [DEBUG] AIExecutor - exiting function detect - execution time: 4.2236 seconds (7.902876178:12.126436916)
+    </textarea>
+    <br />
+    <button id="btn">Draw</button>
+    <hr />
+    <div id="title"></div>
+    <canvas id="c" height="100px"></canvas>
+    <div id="legend"></div>
+    <script>
+        // [2019-08-12 12:17:13,143] [DEBUG] AIExecutor - function '_parallel_detection' execution time: 4.2205 seconds (7.905625014:12.126129738)
+        const lineRe = /(\S+) - exiting function (.*?) - execution time: [\d.]+ seconds \(([\d.]+):([\d.]+)\)/;
+        const SCALE = 100;
+        function draw() {
+            let times = getTimes().sort((a,b) => a.start - b.start); // Order by start time
+            let canvas = document.getElementById("c");
+            let earliest = times.reduce((prev, cur) => Math.min(prev, cur.start), Infinity);
+            let latest = times.reduce((prev, cur) => Math.max(prev, cur.end), 0);
+            let range = latest - earliest;
+            canvas.width = range * SCALE + 50;
+            canvas.height = times.length * 10 + 10;
+            let ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const colors = { };
+            const colorGenerator = genColor(times);
+            const x = a => a * SCALE + 20;
+            const y = a => times.length * 10 - a + 10
+            times.forEach((val, i) => {
+                let start = val.start - earliest, end = val.end - earliest;
+                let height = (i + 1) * 10;
+                if (!colors[val.name]) {
+                    colors[val.name] = colorGenerator.next().value;
+                }
+                ctx.strokeStyle = colors[val.name];
+                ctx.fillStyle = colors[val.name];
+                ctx.beginPath();
+                ctx.moveTo(x(start), y(0));
+                ctx.lineTo(x(start), y(height));
+                ctx.lineTo(x(end), y(height));
+                ctx.lineTo(x(end), y(0));
+                ctx.stroke();
+                ctx.fillText(round(end - start), (x(start) + x(end)) / 2, y(height + 2));
+            });
+            document.getElementById("title").textContent = `${Object.keys(colors).length} functions called ${times.length} times, total duration: ${round(latest - earliest)}`;
+            const legend = document.getElementById("legend");
+            legend.innerHTML = ""; // Remove any existing elements
+            Object.keys(colors).forEach(key => {
+                elem = document.createElement("span");
+                elem.style.color = colors[key];
+                elem.innerHTML = `•&nbsp;${key} `;
+                legend.appendChild(elem);
+            });
+        }
+        function round(x) {
+            const digits = 10 ** 3;
+            return Math.round(digits * x) / digits;
+        }
+        function getTimes() {
+            const lines = document.getElementById("ta").value.split("\n");
+            const times = lines.map(line => {
+                const m = line.match(lineRe);
+                if (m) {
+                    return {
+                        name: `${m[1]}.${m[2]}`,
+                        start: parseFloat(m[3]),
+                        end: parseFloat(m[4])
+                    };
+                }
+            }).filter(x => x);
+            return times;
+        }
+        // Generate a color for each category
+        // This is the best I could come up with, feel free to tweak it
+        // Basically pick some distinct colors and if you run out, make them lighter
+        function* genColor() {
+            const colors = [
+                [0, 0, 256],
+                [256, 0, 0],
+                [0, 256, 0],
+                [256, 0, 256],
+                [0, 256, 256],
+                // [256, 256, 0] Yellow is hard to read
+                [256, 128, 0],
+                [256, 0, 128],
+                [128, 0, 256],
+                [128, 256, 0],
+                [0, 128, 256],
+                [256, 128, 128],
+            ];
+            let i = 0;
+            while(true) {
+                let base = colors[i % colors.length];
+                let rgb = base.map(x => x / (1 + Math.floor(i/colors.length))); // Make lighter if we've already used all colors
+                yield `rgb(${rgb.join(",")})`;
+                i++;
+            }
+        }
+        document.getElementById('btn').addEventListener("click", draw);
+        draw();
+    </script>
+    <hr/>
+    <strong>Tip:</strong> Get data by grepping the logs for lines containing <i style="font-family:monospace">execution time:</i>
+</body>
