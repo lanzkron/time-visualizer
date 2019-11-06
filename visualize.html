@@ -7,13 +7,12 @@
     Paste collected data here:
     <br/>
     <textarea id="ta" style="width: 90%;height: 5em;">
-        [2019-08-12 12:17:11,509] [DEBUG] AIExecutor - exiting function _parallel_detection - execution time: 2.5962 seconds (7.896138067:10.49238141)
-        [2019-08-12 12:17:11,510] [DEBUG] AIExecutor - exiting function detect - execution time: 2.6033 seconds (7.889467769:10.492752736)
-        [2019-08-12 12:17:11,511] [DEBUG] AIDetection - exiting function inspect - execution time: 2.6087 seconds (7.885833323:10.494510026)
-        [2019-08-12 12:17:11,522] [DEBUG] AIDetection - exiting function _apply_selector - execution time: 0.0007 seconds (10.503786568:10.504525187)
-        [2019-08-12 12:17:11,522] [DEBUG] AIDetection - exiting function detect - execution time: 2.6213 seconds (7.88354562:10.504870486)
-        [2019-08-12 12:17:13,143] [DEBUG] AIExecutor - exiting function _parallel_detection - execution time: 4.2205 seconds (7.905625014:12.126129738)
-        [2019-08-12 12:17:13,144] [DEBUG] AIExecutor - exiting function detect - execution time: 4.2236 seconds (7.902876178:12.126436916)
+        exiting function foo - execution time: 2.6033 seconds (7.889467769:9.492752736)
+        exiting function bar - execution time: 2.6087 seconds (7.885833323:10.494510026)
+        exiting function baz - execution time: 2.5962 seconds (9.492752736:10.4238141)
+        exiting function foo - execution time: 2.6213 seconds (10.494510026:12.04870486)
+        exiting function plonk - execution time: 4.2205 seconds (10.4927528:12.126129738)
+        exiting function honk - execution time: 4.2236 seconds (7.902876178:12.126436916)
     </textarea>
     <br />
     <button id="btn">Draw</button>
@@ -22,8 +21,8 @@
     <canvas id="c" height="100px"></canvas>
     <div id="legend"></div>
     <script>
-        // [2019-08-12 12:17:13,143] [DEBUG] AIExecutor - function '_parallel_detection' execution time: 4.2205 seconds (7.905625014:12.126129738)
-        const lineRe = /(\S+) - exiting function (.*?) - execution time: [\d.]+ seconds \(([\d.]+):([\d.]+)\)/;
+        // exiting function foo - execution time: 4.2236 seconds (7.902876178:12.126436916)
+        const lineRe = /\bexiting function (.*?) - execution time: [\d.]+ seconds \(([\d.]+):([\d.]+)\)/;
         const SCALE = 100;
         function draw() {
             let times = getTimes().sort((a,b) => a.start - b.start); // Order by start time
@@ -75,9 +74,9 @@
                 const m = line.match(lineRe);
                 if (m) {
                     return {
-                        name: `${m[1]}.${m[2]}`,
-                        start: parseFloat(m[3]),
-                        end: parseFloat(m[4])
+                        name: m[1],
+                        start: parseFloat(m[2]),
+                        end: parseFloat(m[3])
                     };
                 }
             }).filter(x => x);
