@@ -19,7 +19,7 @@
     <hr />
     <div id="title"></div>
     <canvas id="c" height="100px"></canvas>
-    <div id="legend"></div>
+    <ul id="legend"></ul>
     <script>
         // exiting function foo - execution time: 4.2236 seconds (7.902876178:12.126436916)
         const lineRe = /\bexiting function (.*?) - execution time: [\d.]+ seconds \(([\d.]+):([\d.]+)\)/;
@@ -57,12 +57,25 @@
             document.getElementById("title").textContent = `${Object.keys(colors).length} functions called ${times.length} times, total duration: ${round(latest - earliest)}`;
             const legend = document.getElementById("legend");
             legend.innerHTML = ""; // Remove any existing elements
-            Object.keys(colors).forEach(key => {
-                elem = document.createElement("span");
-                elem.style.color = colors[key];
-                elem.innerHTML = `•&nbsp;${key} `;
-                legend.appendChild(elem);
-            });
+            // Output information for each measured function (the keys for colors are the function names)
+            Object.keys(colors)
+                .map(func => { // Collect information for each function
+                    calls = times.filter(e => e.name == func);
+                    total = calls.reduce((prevTotal, call) =>prevTotal + call.end - call.start, 0);
+                    return {
+                        name: func,
+                        color: colors[func],
+                        count: calls.length,
+                        total: total
+                    };
+                })
+                .sort((a, b) => b.total - a.total) // Sort by total, descending
+                .forEach(entry => {
+                    elem = document.createElement("li");
+                    elem.style.color = entry.color;
+                    elem.innerHTML = `${entry.name}: <strong>${entry.total.toFixed(2)}</strong> /${entry.count} = ${(entry.total/entry.count).toFixed(2)}`;
+                    legend.appendChild(elem);
+                });
         }
         function round(x) {
             const digits = 10 ** 3;
